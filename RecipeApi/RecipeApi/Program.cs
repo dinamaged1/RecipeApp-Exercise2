@@ -71,6 +71,22 @@ app.MapPut("/recipe/{id}", async (Guid id, [FromBody] Recipe newRecipeData) =>
     }
 });
 
+//Add category
+app.MapPost("/category", async (string newCategory) =>
+{
+    if (!categoryList.Contains(newCategory))
+    {
+        categoryList.Add(newCategory);
+        await saveCategoryToJson();
+        return Results.Ok(categoryList);
+    }
+    else
+    {
+        return Results.BadRequest();
+    }
+    
+});
+
 app.Run();
 
 async Task<string> ReadJsonFile(string fileName) =>
@@ -83,4 +99,10 @@ async Task SaveRecipeToJson()
 {
     string jsonString = JsonSerializer.Serialize(recipesList);
     await WriteJsonFile("recipe", jsonString);
+}
+
+async Task saveCategoryToJson()
+{
+    string jsonString = JsonSerializer.Serialize(categoryList);
+    await WriteJsonFile("category", jsonString);
 }
