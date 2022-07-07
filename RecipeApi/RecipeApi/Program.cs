@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RecipeApi.Models;
 using System.Text.Json;
@@ -40,11 +41,46 @@ catch (Exception ex)
 List<Recipe> recipesList = new List<Recipe>(savedRecipes!);
 List<string> categoryList = new List<string>(savedCategories!);
 
+//Get all recipes
+app.MapGet("/recipes", () =>
+{
+    return Results.Ok(recipesList);
+}).WithName("GetRecipes");
+
+//Add new recipe
+app.MapPost("/recipe", async ([FromBody] Recipe newRecipe) =>
+{
+    recipesList.Add(newRecipe);
+    await SaveRecipeToJson();
+    return Results.Ok(recipesList);
+});
+
+//Edit recipe
+app.MapPut("/recipe/{id}", async (Guid id, [FromBody] Recipe newRecipeData) =>
+{
+    var selectedRecipeIndex = recipesList.FindIndex(x => x.Id == id);
+    if (selectedRecipeIndex != -1)
+    {
+        recipesList[selectedRecipeIndex] = newRecipeData;
+        await SaveRecipeToJson();
+        return Results.Ok(recipesList);
+    }
+    else
+    {
+        return Results.NotFound();
+    }
+});
+
 app.Run();
 
-
-static async Task<string> ReadJsonFile(string fileName) =>
+async Task<string> ReadJsonFile(string fileName) =>
 await File.ReadAllTextAsync($"{fileName}.json");
 
-static async Task WriteJsonFile(string fileName, string fileData) =>
+async Task WriteJsonFile(string fileName, string fileData) =>
 await File.WriteAllTextAsync($"{fileName}.json", fileData);
+
+async Task SaveRecipeToJson()
+{
+    string jsonString = JsonSerializer.Serialize(recipesList);
+    await WriteJsonFile("recipe", jsonString);
+}

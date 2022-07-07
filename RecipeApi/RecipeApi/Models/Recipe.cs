@@ -2,7 +2,7 @@
 {
     public class Recipe
     {
-        public int Id { get; set; }
+        public Guid Id { get; set; }
         public string Title { get; set; }=String.Empty;
         public List<string> Instructions { get; set; } = new();
         public List<string> Ingredients { get; set; } = new();
