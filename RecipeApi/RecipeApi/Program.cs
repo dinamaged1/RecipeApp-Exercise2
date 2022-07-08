@@ -58,14 +58,6 @@ app.MapPost("/recipe", async ([FromBody] Recipe newRecipe) =>
     return Results.Ok(recipesList);
 });
 
-//Get all categories
-app.MapGet("/categories", () =>
-{
-    if (categoryList != null)
-        return Results.Ok(categoryList);
-    else
-        return Results.NoContent();
-});
 //Edit recipe
 app.MapPut("/recipe/{id}", async (Guid id, [FromBody] Recipe newRecipeData) =>
 {
@@ -80,6 +72,21 @@ app.MapPut("/recipe/{id}", async (Guid id, [FromBody] Recipe newRecipeData) =>
     {
         return Results.NotFound();
     }
+});
+
+//Remove recipe
+app.MapDelete("/recipe/{id}", (() =>
+{
+
+});
+
+//Get all categories
+app.MapGet("/categories", () =>
+{
+    if (categoryList != null)
+        return Results.Ok(categoryList);
+    else
+        return Results.NoContent();
 });
 
 //Add category
@@ -120,6 +127,20 @@ app.MapPut("/category/{name}", async (string oldCategoryName, string newCategory
     else
     {
         return Results.BadRequest();
+    }
+});
+
+//Delete Category
+app.MapDelete("category/{name}", (string categoryName) =>
+{
+    if (categoryList.Contains(categoryName))
+    {
+        categoryList.Remove(categoryName);
+        return Results.Ok(categoryList);
+    }
+    else
+    {
+        return Results.NotFound();
     }
 });
 
