@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using RecipeApi.Models;
 using System.Text.Json;
+using System;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -74,7 +74,7 @@ app.MapPut("/recipe/{id}", async (Guid id, [FromBody] Recipe newRecipeData) =>
 //Add category
 app.MapPost("/category", async (string newCategory) =>
 {
-    if (!categoryList.Contains(newCategory))
+    if (!categoryList.Contains(newCategory) && newCategory != "")
     {
         categoryList.Add(newCategory);
         await saveCategoryToJson();
@@ -84,8 +84,9 @@ app.MapPost("/category", async (string newCategory) =>
     {
         return Results.BadRequest();
     }
-    
 });
+
+//Edit category
 
 app.Run();
 
