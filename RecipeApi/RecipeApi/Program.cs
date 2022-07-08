@@ -44,7 +44,10 @@ List<string> categoryList = new List<string>(savedCategories!);
 //Get all recipes
 app.MapGet("/recipes", () =>
 {
-    return Results.Ok(recipesList);
+    if (recipesList != null)
+        return Results.Ok(recipesList);
+    else 
+        return Results.NoContent();
 }).WithName("GetRecipes");
 
 //Add new recipe
@@ -55,6 +58,14 @@ app.MapPost("/recipe", async ([FromBody] Recipe newRecipe) =>
     return Results.Ok(recipesList);
 });
 
+//Get all categories
+app.MapGet("/categories", () =>
+{
+    if (categoryList != null)
+        return Results.Ok(categoryList);
+    else
+        return Results.NoContent();
+});
 //Edit recipe
 app.MapPut("/recipe/{id}", async (Guid id, [FromBody] Recipe newRecipeData) =>
 {
