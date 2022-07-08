@@ -8,9 +8,21 @@ using Exercise1;
 using System.Text.Json;
 using Spectre.Console;
 
+//Create HttpClient
+HttpClient client = new HttpClient();
+client.BaseAddress = new Uri("https://localhost:7100/");
+
+//Testing the connection
+//Will handle 
+using var httpResponseMessage =
+    await client.GetAsync($"/recipes");
+httpResponseMessage.EnsureSuccessStatusCode();
+Console.WriteLine(httpResponseMessage.Content.ReadAsStringAsync().Result);
+
 //Desrialize recipe file and category file
 List<Recipe>? savedRecipes = new();
 List<String>? savedCategories = new();
+
 try
 {
     string recipeJson = await ReadJsonFile("recipe");
