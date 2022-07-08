@@ -50,6 +50,19 @@ app.MapGet("/recipes", () =>
         return Results.NoContent();
 }).WithName("GetRecipes");
 
+//Get specific  recipe
+app.MapGet("/recipe/{id}", (Guid id) => {
+    var selectedRecipeIndex = recipesList.FindIndex(x => x.Id == id);
+    if (selectedRecipeIndex != -1)
+    {
+        return Results.Ok(recipesList[selectedRecipeIndex]);
+    }
+    else
+    {
+        return Results.NotFound();
+    }
+});
+
 //Add new recipe
 app.MapPost("/recipe", async ([FromBody] Recipe newRecipe) =>
 {
@@ -75,9 +88,19 @@ app.MapPut("/recipe/{id}", async (Guid id, [FromBody] Recipe newRecipeData) =>
 });
 
 //Remove recipe
-app.MapDelete("/recipe/{id}", (() =>
+app.MapDelete("/recipe/{id}",async (Guid id) =>
 {
-
+    var selectedRecipeIndex = recipesList.FindIndex(x => x.Id == id);
+    if(selectedRecipeIndex != -1)
+    {
+        recipesList.Remove(recipesList[selectedRecipeIndex]);
+        await SaveRecipeToJson();
+        return Results.Ok();
+    }
+    else
+    {
+        return Results.NotFound();
+    }
 });
 
 //Get all categories
@@ -95,7 +118,7 @@ app.MapPost("/category", async (string newCategory) =>
     if (!categoryList.Contains(newCategory) && newCategory != "")
     {
         categoryList.Add(newCategory);
-        await saveCategoryToJson();
+        await SaveCategoryToJson();
         return Results.Ok(categoryList);
     }
     else
@@ -111,6 +134,8 @@ app.MapPut("/category/{name}", async (string oldCategoryName, string newCategory
     if (indexOfCategory != -1 && !categoryList.Contains(newCategoryName) && newCategoryName != "")
     {
         categoryList[indexOfCategory] = newCategoryName;
+
+        //Edit the category name for each recipe belog to this category
         for (int i = 0; i < recipesList.Count; i++)
         {
             for (int j = 0; j < recipesList[i].Categories.Count; j++)
@@ -121,7 +146,7 @@ app.MapPut("/category/{name}", async (string oldCategoryName, string newCategory
                 }
             }
         }
-        await saveCategoryToJson();
+        await SaveCategoryToJson();
         return Results.Ok(categoryList);
     }
     else
@@ -131,11 +156,25 @@ app.MapPut("/category/{name}", async (string oldCategoryName, string newCategory
 });
 
 //Delete Category
-app.MapDelete("category/{name}", (string categoryName) =>
+app.MapDelete("category/{name}",async (string categoryName) =>
 {
     if (categoryList.Contains(categoryName))
     {
         categoryList.Remove(categoryName);
+
+        //Remove this category from each recipe
+        for (int i = 0; i < recipesList.Count; i++)
+        {
+            for (int j = 0; j < recipesList[i].Categories.Count; j++)
+            {
+                if (recipesList[i].Categories[j] == categoryName)
+                {
+                    recipesList[i].Categories.Remove(recipesList[i].Categories[j]);
+                }
+            }
+        }
+        await SaveCategoryToJson();
+        await SaveRecipeToJson();
         return Results.Ok(categoryList);
     }
     else
@@ -158,7 +197,7 @@ async Task SaveRecipeToJson()
     await WriteJsonFile("recipe", jsonString);
 }
 
-async Task saveCategoryToJson()
+async Task SaveCategoryToJson()
 {
     string jsonString = JsonSerializer.Serialize(categoryList);
     await WriteJsonFile("category", jsonString);
