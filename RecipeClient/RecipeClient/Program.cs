@@ -12,36 +12,12 @@ using Spectre.Console;
 HttpClient client = new HttpClient();
 client.BaseAddress = new Uri("https://localhost:7100/");
 
-//Testing the connection
-var httpResponseMessage =
-    await client.GetAsync($"/recipes");
-httpResponseMessage.EnsureSuccessStatusCode();
-var recipeData = httpResponseMessage.Content.ReadAsStringAsync().Result;
-
-httpResponseMessage =
-    await client.GetAsync($"/categories");
-httpResponseMessage.EnsureSuccessStatusCode();
-var categoryData = httpResponseMessage.Content.ReadAsStringAsync().Result;
-
-//Desrialize recipe file and category file
-List<Recipe>? savedRecipes = new();
-List<String>? savedCategories = new();
-
-Console.WriteLine(recipeData);
-try
-{
-    savedRecipes = JsonSerializer.Deserialize<List<Recipe>>(recipeData);
-    savedCategories = JsonSerializer.Deserialize<List<string>>(categoryData);
-}
-catch (Exception ex)
-{
-    AnsiConsole.WriteLine($"[red1]{ex.Message}[/]");
-    return;
-}
-
 //Create list of recipes and list of categories
-List<Recipe> recipesList = new List<Recipe>(savedRecipes!);
-List<string> categoryList = new List<string>(savedCategories!);
+List<Recipe> recipesList = new List<Recipe>();
+List<string> categoryList = new List<string>();
+
+//Adding data to recipe list and category list from the back-end
+(recipesList, categoryList) = await GetDataRequest(client);
 
 //Adding console GUI
 AnsiConsole.Write(
@@ -90,7 +66,7 @@ while (true)
             break;
 
         case "Add Category":
-            AddCategory(categoryList);
+            AddCategory(categoryList, client);
             break;
 
         case "Edit Category":
@@ -103,6 +79,8 @@ while (true)
         default:
             break;
     }
+    //Updating recipe list and category list
+    (recipesList, categoryList) =await GetDataRequest(client);
 }
 
 async Task AddRecipe(List<string> categoryList, List<Recipe> recipesList, HttpClient client)
@@ -198,7 +176,7 @@ void EditRecipe(List<string> categoryList, List<Recipe> recipesList, HttpClient 
                 Recipe newRecipe = new Recipe(
                     selectedRecipe.Id, newRecipeTitle, selectedRecipe.Instructions,
                     selectedRecipe.Ingredients, selectedRecipe.Categories);
-                EditRecipeRequest(newRecipe,client);
+                EditRecipeRequest(newRecipe, client);
             }
             else
             {
@@ -246,7 +224,7 @@ void EditRecipe(List<string> categoryList, List<Recipe> recipesList, HttpClient 
                 Recipe newRecipe = new Recipe(
                     selectedRecipe.Id, selectedRecipe.Title, selectedRecipe.Instructions,
                     selectedRecipe.Ingredients, categories);
-                EditRecipeRequest(newRecipe,client);
+                EditRecipeRequest(newRecipe, client);
             }
             else
             {
@@ -263,23 +241,22 @@ void EditRecipe(List<string> categoryList, List<Recipe> recipesList, HttpClient 
     }
 }
 
-async void AddCategory(List<string> categoryList)
+async void AddCategory(List<string> categoryList, HttpClient client)
 {
     string newCategory = AnsiConsole.Ask<string>("What's the name of category you want to add?");
     if (newCategory != "")
     {
-        if (!categoryList.Contains(newCategory))
-        {
-            categoryList.Add(newCategory);
-            var options = new JsonSerializerOptions { WriteIndented = true };
-            string jsonString = JsonSerializer.Serialize(categoryList, options);
-            //await WriteJsonFile("category", jsonString);
-            AnsiConsole.WriteLine($"{newCategory} Added successfully");
-        }
-        else
-        {
-            AnsiConsole.WriteLine($"{newCategory} is already in category list");
-        }
+        var categoryItemJson = new StringContent(
+            JsonSerializer.Serialize(newCategory),
+            Encoding.UTF8,
+            "application/json");
+
+        using var httpResponseMessage =
+            await client.PostAsync("/category", categoryItemJson);
+
+        httpResponseMessage.EnsureSuccessStatusCode();
+
+        AnsiConsole.WriteLine($"{newCategory} Added successfully");
     }
     else
     {
@@ -330,7 +307,38 @@ async void EditRecipeRequest(Recipe newRecipe, HttpClient client)
     httpResponseMessage.EnsureSuccessStatusCode();
 }
 
+async Task<(List<Recipe>, List<string>)> GetDataRequest(HttpClient client)
+{
+    var httpResponseMessage =
+    await client.GetAsync($"/recipes");
+    httpResponseMessage.EnsureSuccessStatusCode();
+    var recipeData = httpResponseMessage.Content.ReadAsStringAsync().Result;
 
+    httpResponseMessage =
+        await client.GetAsync($"/categories");
+    httpResponseMessage.EnsureSuccessStatusCode();
+    var categoryData = httpResponseMessage.Content.ReadAsStringAsync().Result;
+
+    //Desrialize recipe file and category file
+    List<Recipe>? savedRecipes = new();
+    List<String>? savedCategories = new();
+
+    try
+    {
+        savedRecipes = JsonSerializer.Deserialize<List<Recipe>>(recipeData);
+        savedCategories = JsonSerializer.Deserialize<List<string>>(categoryData);
+    }
+    catch (Exception ex)
+    {
+        AnsiConsole.WriteLine($"[red1]{ex.Message}[/]");
+    }
+
+    //Updating recipe list and category list data
+    List<Recipe> recipesList = new List<Recipe>(savedRecipes!);
+    List<string> categoryList = new List<string>(savedCategories!);
+
+    return (recipesList, categoryList);
+}
 
 //Console related functions
 string ConsoleSelection(string[] list, string question)
