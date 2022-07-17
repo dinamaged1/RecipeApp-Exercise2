@@ -1,4 +1,6 @@
-﻿public class Recipe
+﻿using System.Text.Json.Serialization;
+
+public class Recipe
 {
     public Guid Id { get; set; }
     public string Title { get; set; } = String.Empty;
