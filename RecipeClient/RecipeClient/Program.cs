@@ -100,6 +100,7 @@ while (true)
         default:
             break;
     }
+
     //Updating recipe list and category list
     (recipesList, categoryList) = await GetDataRequest(client);
 }
@@ -114,7 +115,7 @@ async Task AddRecipe(List<string> categoryList, List<Recipe> recipesList, HttpCl
 
     if (string.IsNullOrEmpty(title) || string.IsNullOrEmpty(instructions) || string.IsNullOrEmpty(ingredients))
     {
-        AnsiConsole.WriteLine("[red3_1]Input data is not complete. please enter valid data![/]");
+        AnsiConsole.MarkupLine("[red3_1]Input data is not complete. please enter valid data![/]");
         return;
     }
 
@@ -146,6 +147,7 @@ void ListRecipes(List<Recipe> recipesList)
         AnsiConsole.WriteLine("No recipes added yet!");
         return;
     }
+
     //create table to view all recipes
     var recipeTable = new Table();
     recipeTable.AddColumn("[blue]Recipe Title[/]");
@@ -175,15 +177,15 @@ void ListRecipes(List<Recipe> recipesList)
 void EditRecipe(List<string> categoryList, List<Recipe> recipesList, HttpClient client)
 {
     //Get the recipe that user want to edit
-    Guid recipeSelectedGuid = RecipeSelection(recipesList);
-    var selectedRecipe = recipesList.FirstOrDefault(x => x.Id == recipeSelectedGuid);
+    Guid selectedRecipeGuid = RecipeSelection(recipesList);
+    var selectedRecipe = recipesList.FirstOrDefault(x => x.Id == selectedRecipeGuid);
     if (selectedRecipe == null)
     {
-        AnsiConsole.Markup($"[red1]faild to edit[/]");
+        AnsiConsole.MarkupLine($"[red1]faild to edit[/]");
         return;
     }
 
-    //ask user about the edits want then edit the data needed
+    //ask user about the specific edit then edit the data needed
     string[] avaliableEdits = new string[] { "Edit title", "Edit instructions", "Edit ingredients", "Edit categories", "Exit" };
     string typeOfEdit = ConsoleSelection(avaliableEdits, "What do you want to edit");
 
@@ -265,8 +267,8 @@ void EditRecipe(List<string> categoryList, List<Recipe> recipesList, HttpClient 
 async void DeleteRecipe(HttpClient client)
 {
     //Get the recipe that user want to delete
-    Guid recipeSelectedGuid = RecipeSelection(recipesList);
-    var selectedRecipe = recipesList.FirstOrDefault(x => x.Id == recipeSelectedGuid);
+    Guid selectedRecipeGuid = RecipeSelection(recipesList);
+    var selectedRecipe = recipesList.FirstOrDefault(x => x.Id == selectedRecipeGuid);
     if (selectedRecipe == null)
     {
         AnsiConsole.MarkupLine($"[red1]faild to edit[/]");
@@ -275,7 +277,7 @@ async void DeleteRecipe(HttpClient client)
     else
     {
         using var httpResponseMessage =
-            await client.DeleteAsync($"/recipe/{recipeSelectedGuid}");
+            await client.DeleteAsync($"/recipe/{selectedRecipeGuid}");
 
         httpResponseMessage.EnsureSuccessStatusCode();
 
@@ -382,11 +384,13 @@ async void EditRecipeRequest(Recipe newRecipe, HttpClient client)
 
 async Task<(List<Recipe>, List<string>)> GetDataRequest(HttpClient client)
 {
+    //Get recipe list from back-end as json format
     var httpResponseMessage =
         await client.GetAsync($"/recipes");
     httpResponseMessage.EnsureSuccessStatusCode();
     var recipeData = httpResponseMessage.Content.ReadAsStringAsync().Result;
 
+    //Get category list from back-end as json format
     httpResponseMessage =
         await client.GetAsync($"/categories");
     httpResponseMessage.EnsureSuccessStatusCode();
@@ -395,7 +399,6 @@ async Task<(List<Recipe>, List<string>)> GetDataRequest(HttpClient client)
     //Desrialize recipeData and categoryData which are string in json format
     List<Recipe>? savedRecipes = new();
     List<String>? savedCategories = new();
-
     try
     {
         savedRecipes = JsonSerializer.Deserialize<List<Recipe>>(recipeData);
@@ -425,7 +428,8 @@ string ConsoleSelection(string[] list, string question)
            .PageSize(10)
            .MoreChoicesText("[grey](Move up and down to reveal more)[/]")
            .AddChoices(list)
-);
+           );
+
     return action;
 }
 
