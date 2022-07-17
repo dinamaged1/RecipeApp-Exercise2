@@ -113,7 +113,7 @@ app.MapGet("/categories", () =>
 });
 
 //Add category
-app.MapPost("/category", async (string newCategory) =>
+app.MapPost("/category", async ([FromBody] string newCategory) =>
 {
     if (!categoryList.Contains(newCategory) && newCategory != "")
     {
@@ -128,9 +128,9 @@ app.MapPost("/category", async (string newCategory) =>
 });
 
 //Edit category
-app.MapPut("/category/{name}", async (string oldCategoryName, string newCategoryName) =>
+app.MapPut("/category/{name}", async (string name, [FromBody] string newCategoryName) =>
 {
-    int indexOfCategory = categoryList.FindIndex(x => x == oldCategoryName);
+    int indexOfCategory = categoryList.FindIndex(x => x == name);
     if (indexOfCategory != -1 && !categoryList.Contains(newCategoryName) && newCategoryName != "")
     {
         categoryList[indexOfCategory] = newCategoryName;
@@ -140,13 +140,14 @@ app.MapPut("/category/{name}", async (string oldCategoryName, string newCategory
         {
             for (int j = 0; j < recipesList[i].Categories.Count; j++)
             {
-                if (recipesList[i].Categories[j] == oldCategoryName)
+                if (recipesList[i].Categories[j] == name)
                 {
                     recipesList[i].Categories[j] = newCategoryName;
                 }
             }
         }
         await SaveCategoryToJson();
+        await SaveRecipeToJson();
         return Results.Ok(categoryList);
     }
     else

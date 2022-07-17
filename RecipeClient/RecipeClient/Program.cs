@@ -70,7 +70,7 @@ while (true)
             break;
 
         case "Edit Category":
-            EditCategory(categoryList, recipesList);
+            EditCategory(categoryList, recipesList, client);
             break;
 
         case "Exit":
@@ -80,7 +80,7 @@ while (true)
             break;
     }
     //Updating recipe list and category list
-    (recipesList, categoryList) =await GetDataRequest(client);
+    (recipesList, categoryList) = await GetDataRequest(client);
 }
 
 async Task AddRecipe(List<string> categoryList, List<Recipe> recipesList, HttpClient client)
@@ -264,27 +264,27 @@ async void AddCategory(List<string> categoryList, HttpClient client)
     }
 }
 
-async void EditCategory(List<string> categoryList, List<Recipe> recipesList)
+async void EditCategory(List<string> categoryList, List<Recipe> recipesList, HttpClient client)
 {
     string oldCategoryName = ConsoleSelection(categoryList.ToArray(), "Which category you want to edit?");
     string newCategoryName = AnsiConsole.Ask<string>("What's the new name of the category?");
     if (newCategoryName != null)
     {
         int indexOfEdited = categoryList.FindIndex(x => x == oldCategoryName);
-        categoryList[indexOfEdited] = newCategoryName;
-        var options = new JsonSerializerOptions { WriteIndented = true };
-        string jsonString = JsonSerializer.Serialize(categoryList, options);
-        //await WriteJsonFile("category", jsonString);
-        for (int i = 0; i < recipesList.Count; i++)
-        {
-            for (int j = 0; j < recipesList[i].Categories.Count; j++)
-            {
-                if (recipesList[i].Categories[j] == oldCategoryName)
-                {
-                    recipesList[i].Categories[j] = newCategoryName;
-                }
-            }
-        }
+        var oldCategoryJson = new StringContent(
+            JsonSerializer.Serialize(oldCategoryName),
+            Encoding.UTF8,
+            "application/json");
+        var newCategoryJson = new StringContent(
+            JsonSerializer.Serialize(newCategoryName),
+            Encoding.UTF8,
+            "application/json");
+
+        using var httpResponseMessage =
+            await client.PutAsync($"/category/{oldCategoryName}", newCategoryJson);
+
+        httpResponseMessage.EnsureSuccessStatusCode();
+
         AnsiConsole.WriteLine($"Category edited successfuly");
     }
     else
@@ -310,7 +310,7 @@ async void EditRecipeRequest(Recipe newRecipe, HttpClient client)
 async Task<(List<Recipe>, List<string>)> GetDataRequest(HttpClient client)
 {
     var httpResponseMessage =
-    await client.GetAsync($"/recipes");
+        await client.GetAsync($"/recipes");
     httpResponseMessage.EnsureSuccessStatusCode();
     var recipeData = httpResponseMessage.Content.ReadAsStringAsync().Result;
 
