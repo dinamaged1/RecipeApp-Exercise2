@@ -8,6 +8,7 @@ using Exercise1;
 using System.Text.Json;
 using Spectre.Console;
 
+
 //Create HttpClient
 HttpClient client = new HttpClient();
 client.BaseAddress = new Uri("https://localhost:7100/");
@@ -34,12 +35,12 @@ while (true)
     switch (firstMenuChoice)
     {
         case "Recipe":
-            choices = new string[] { "Add recipe", "Edit recipe", "List recipes", "Exit" };
+            choices = new string[] { "Add recipe", "Edit recipe", "Delete recipe", "List recipes", "Exit" };
             secondMenuChoice = ConsoleSelection(choices, "How can I serve you?");
             break;
 
         case "Category":
-            choices = new string[] { "Add Category", "Edit Category", "Exit" };
+            choices = new string[] { "Add category", "Edit category", "Delete category", "List categories", "Exit" };
             secondMenuChoice = ConsoleSelection(choices, "How can I serve you?");
 
             break;
@@ -65,12 +66,24 @@ while (true)
             EditRecipe(categoryList, recipesList, client);
             break;
 
-        case "Add Category":
+        case "Delete recipe":
+            DeleteRecipe(client);
+            break;
+
+        case "Add category":
             AddCategory(categoryList, client);
             break;
 
-        case "Edit Category":
-            EditCategory(categoryList, recipesList, client);
+        case "Edit category":
+            EditCategory(categoryList, client);
+            break;
+
+        case "Delete category":
+            DeleteCategory(categoryList, client);
+            break;
+
+        case "List categories":
+            ListCategories(categoryList);
             break;
 
         case "Exit":
@@ -127,10 +140,10 @@ void ListRecipes(List<Recipe> recipesList)
     }
     //create table to view all recipes
     var recipeTable = new Table();
-    recipeTable.AddColumn("Recipe Title");
-    recipeTable.AddColumn("Ingredients");
-    recipeTable.AddColumn("Instructions");
-    recipeTable.AddColumn("Category");
+    recipeTable.AddColumn("[blue]Recipe Title[/]");
+    recipeTable.AddColumn("[blue]Ingredients[/]");
+    recipeTable.AddColumn("[blue]Instructions[/]");
+    recipeTable.AddColumn("[blue]Category[/]");
     recipeTable.Border(TableBorder.Rounded);
     recipeTable.Centered();
 
@@ -180,7 +193,7 @@ void EditRecipe(List<string> categoryList, List<Recipe> recipesList, HttpClient 
             }
             else
             {
-                AnsiConsole.WriteLine("Edit faild!");
+                AnsiConsole.WriteLine($"Edit {selectedRecipe.Title} title faild!");
             }
             break;
 
@@ -196,7 +209,7 @@ void EditRecipe(List<string> categoryList, List<Recipe> recipesList, HttpClient 
             }
             else
             {
-                AnsiConsole.WriteLine("Edit faild!");
+                AnsiConsole.WriteLine($"Editing {selectedRecipe.Title} instructions faild!");
             }
             break;
 
@@ -212,7 +225,7 @@ void EditRecipe(List<string> categoryList, List<Recipe> recipesList, HttpClient 
             }
             else
             {
-                AnsiConsole.WriteLine("Edit faild!");
+                AnsiConsole.WriteLine($"Editing {selectedRecipe.Title} ingredients faild!");
             }
             break;
 
@@ -228,7 +241,7 @@ void EditRecipe(List<string> categoryList, List<Recipe> recipesList, HttpClient 
             }
             else
             {
-                AnsiConsole.WriteLine("Edit faild!");
+                AnsiConsole.WriteLine($"Editing {selectedRecipe.Title} categories faild!");
             }
             break;
 
@@ -238,6 +251,27 @@ void EditRecipe(List<string> categoryList, List<Recipe> recipesList, HttpClient 
 
         default:
             break;
+    }
+}
+
+async void DeleteRecipe(HttpClient client)
+{
+    //Get the recipe that user want to delete
+    Guid recipeSelectedGuid = RecipeSelection(recipesList);
+    var selectedRecipe = recipesList.FirstOrDefault(x => x.Id == recipeSelectedGuid);
+    if (selectedRecipe == null)
+    {
+        AnsiConsole.MarkupLine($"[red1]faild to edit[/]");
+        return;
+    }
+    else
+    {
+        using var httpResponseMessage =
+            await client.DeleteAsync($"/recipe/{recipeSelectedGuid}");
+
+        httpResponseMessage.EnsureSuccessStatusCode();
+
+        AnsiConsole.MarkupLine($"Deleteing [yellow]{selectedRecipe.Title}[/] recipe succeed.");
     }
 }
 
@@ -256,15 +290,15 @@ async void AddCategory(List<string> categoryList, HttpClient client)
 
         httpResponseMessage.EnsureSuccessStatusCode();
 
-        AnsiConsole.WriteLine($"{newCategory} Added successfully");
+        AnsiConsole.MarkupLine($"[green]{newCategory}[/] Added successfully");
     }
     else
     {
-        AnsiConsole.WriteLine($"Adding new category failed");
+        AnsiConsole.MarkupLine($"[red]Adding new category failed[/]");
     }
 }
 
-async void EditCategory(List<string> categoryList, List<Recipe> recipesList, HttpClient client)
+async void EditCategory(List<string> categoryList, HttpClient client)
 {
     string oldCategoryName = ConsoleSelection(categoryList.ToArray(), "Which category you want to edit?");
     string newCategoryName = AnsiConsole.Ask<string>("What's the new name of the category?");
@@ -285,12 +319,43 @@ async void EditCategory(List<string> categoryList, List<Recipe> recipesList, Htt
 
         httpResponseMessage.EnsureSuccessStatusCode();
 
-        AnsiConsole.WriteLine($"Category edited successfuly");
+        AnsiConsole.MarkupLine($"Editing [green]{oldCategoryName}[/] to [green]{newCategoryName}[/] succeed");
     }
     else
     {
-        AnsiConsole.WriteLine($"Adding new category failed");
+        AnsiConsole.WriteLine($"Editing category failed");
     }
+}
+
+async void DeleteCategory(List<string> categoryList, HttpClient client)
+{
+    string toBeDeletedCategory = ConsoleSelection(categoryList.ToArray(), "Which category you want to delete?");
+    if (toBeDeletedCategory != null)
+    {
+        using var httpResponseMessage =
+            await client.DeleteAsync($"/category/{toBeDeletedCategory}");
+
+        httpResponseMessage.EnsureSuccessStatusCode();
+
+        AnsiConsole.MarkupLine($"Deleteing [yellow]{toBeDeletedCategory}[/] succeed.");
+    }
+    else
+    {
+        AnsiConsole.MarkupLine($"Deleting [red]{toBeDeletedCategory}[/] category failed");
+    }
+}
+
+void ListCategories(List<string> categoryList)
+{
+    var categories = new Tree("Categories")
+        .Style(Style.Parse("red"))
+        .Guide(TreeGuide.Line);
+
+    foreach (var category in categoryList)
+    {
+        categories.AddNode($"[yellow]{category}[/]");
+    }
+    AnsiConsole.Write(categories);
 }
 
 //Requests related functions
@@ -330,7 +395,8 @@ async Task<(List<Recipe>, List<string>)> GetDataRequest(HttpClient client)
     }
     catch (Exception ex)
     {
-        AnsiConsole.WriteLine($"[red1]{ex.Message}[/]");
+        AnsiConsole.Write(new Markup($"[red1]{ex.Message}[/]"));
+        AnsiConsole.WriteLine();
     }
 
     //Updating recipe list and category list data

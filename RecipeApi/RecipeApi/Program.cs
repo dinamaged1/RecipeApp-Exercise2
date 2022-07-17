@@ -157,18 +157,18 @@ app.MapPut("/category/{name}", async (string name, [FromBody] string newCategory
 });
 
 //Delete Category
-app.MapDelete("category/{name}",async (string categoryName) =>
+app.MapDelete("category/{name}",async (string name) =>
 {
-    if (categoryList.Contains(categoryName))
+    if (categoryList.Contains(name))
     {
-        categoryList.Remove(categoryName);
+        categoryList.Remove(name);
 
         //Remove this category from each recipe
         for (int i = 0; i < recipesList.Count; i++)
         {
             for (int j = 0; j < recipesList[i].Categories.Count; j++)
             {
-                if (recipesList[i].Categories[j] == categoryName)
+                if (recipesList[i].Categories[j] == name)
                 {
                     recipesList[i].Categories.Remove(recipesList[i].Categories[j]);
                 }
