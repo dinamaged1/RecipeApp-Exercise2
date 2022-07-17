@@ -281,7 +281,7 @@ async void DeleteRecipe(HttpClient client)
 
         httpResponseMessage.EnsureSuccessStatusCode();
 
-        AnsiConsole.MarkupLine($"Deleteing [yellow]{selectedRecipe.Title}[/] recipe succeed.");
+        AnsiConsole.MarkupLine($"Deleting [yellow]{selectedRecipe.Title}[/] recipe succeed.");
     }
 }
 
@@ -347,7 +347,7 @@ async void DeleteCategory(List<string> categoryList, HttpClient client)
 
         httpResponseMessage.EnsureSuccessStatusCode();
 
-        AnsiConsole.MarkupLine($"Deleteing [yellow]{toBeDeletedCategory}[/] succeed.");
+        AnsiConsole.MarkupLine($"Deleting [yellow]{toBeDeletedCategory}[/] succeed.");
     }
     else
     {
