@@ -7,11 +7,19 @@ using System.IO;
 using Exercise1;
 using System.Text.Json;
 using Spectre.Console;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 
+// Build a config object and get url
+IConfiguration config = new ConfigurationBuilder()
+    .AddJsonFile("appsettings.json")
+    .AddEnvironmentVariables()
+    .Build();
+var url = config.GetRequiredSection("url").Get<string>();
 
-//Create HttpClient
+//Create HttpClient and add base address
 HttpClient client = new HttpClient();
-client.BaseAddress = new Uri("https://localhost:7100/");
+client.BaseAddress = new Uri(url);
 
 //Create list of recipes and list of categories
 List<Recipe> recipesList = new List<Recipe>();
@@ -319,11 +327,11 @@ async void EditCategory(List<string> categoryList, HttpClient client)
 
         httpResponseMessage.EnsureSuccessStatusCode();
 
-        AnsiConsole.MarkupLine($"Editing [green]{oldCategoryName}[/] to [green]{newCategoryName}[/] succeed");
+        AnsiConsole.MarkupLine($"Editing [green]{oldCategoryName}[/] to [green]{newCategoryName}[/] succeed.");
     }
     else
     {
-        AnsiConsole.WriteLine($"Editing category failed");
+        AnsiConsole.WriteLine($"Editing category failed.");
     }
 }
 
@@ -341,7 +349,7 @@ async void DeleteCategory(List<string> categoryList, HttpClient client)
     }
     else
     {
-        AnsiConsole.MarkupLine($"Deleting [red]{toBeDeletedCategory}[/] category failed");
+        AnsiConsole.MarkupLine($"Deleting [red]{toBeDeletedCategory}[/] category failed.");
     }
 }
 
@@ -384,7 +392,7 @@ async Task<(List<Recipe>, List<string>)> GetDataRequest(HttpClient client)
     httpResponseMessage.EnsureSuccessStatusCode();
     var categoryData = httpResponseMessage.Content.ReadAsStringAsync().Result;
 
-    //Desrialize recipe file and category file
+    //Desrialize recipeData and categoryData which are string in json format
     List<Recipe>? savedRecipes = new();
     List<String>? savedCategories = new();
 
@@ -395,8 +403,7 @@ async Task<(List<Recipe>, List<string>)> GetDataRequest(HttpClient client)
     }
     catch (Exception ex)
     {
-        AnsiConsole.Write(new Markup($"[red1]{ex.Message}[/]"));
-        AnsiConsole.WriteLine();
+        AnsiConsole.MarkupLine($"[red1]{ex.Message}[/]");
     }
 
     //Updating recipe list and category list data
@@ -429,8 +436,8 @@ Guid RecipeSelection(List<Recipe> recipesList)
            .Title("Which recipe you want to edit?")
            .PageSize(10)
            .MoreChoicesText("[grey](Move up and down to reveal more)[/]")
-           .AddChoices(recipesList.Select((recipe, Index) => $"{Index + 1}-{recipe.Title}"))
-);
+           .AddChoices(recipesList.Select((recipe, Index) => $"{Index + 1}-{recipe.Title}")));
+
     string indexOfSelectedRecipe = selectedRecipe.Split('-')[0];
     return recipesList[Convert.ToInt32(indexOfSelectedRecipe) - 1].Id;
 }
